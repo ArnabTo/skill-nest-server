@@ -72,8 +72,10 @@ connectDB().then(() => {
             if(user){
                 admin = user.role === 'admin'
             }
+            res.send({admin})
+         }catch(error){
+            res.send({error})
          }
-
       })
     app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
         try {
