@@ -17,6 +17,7 @@ const allClass = require('./src/models/AllClassModel');
 const classCart = require('./src/models/ClassCartModel')
 const payment = require('./src/models/PaymentInfoModel')
 const Enroll = require('./src/models/EnrollModel');
+const AllEnrolled = require('./src/models/AllEnroledModel')
 //middleware
 app.use(express.json());
 app.use(cors());
@@ -193,6 +194,7 @@ connectDB().then(() => {
     //getpaymentedclass
     app.post('/myenrolls', async (req, res) => {
         const enrollsInfo = req.body;
+        // console.log(enrollsInfo)
         try {
             const checkEnrolls = await Enroll.findOne({
                 email: enrollsInfo.email,
@@ -210,8 +212,63 @@ connectDB().then(() => {
     })
     app.get('/myenrolls/:email', async (req, res) => {
         const email = req.params.email;
-        console.log(email)
+        // console.log(email)
+        try {
+            const query = { email: email };
+            const paymentInfo = await Enroll.findOne(query)
+            const filter = { _id: paymentInfo.enrolledClassid }
+            console.log(filter)
+            const enrolledClass = await allClass.findOne(filter)
+            res.send(enrolledClass)
+            Enroll.deleteOne({ _id: paymentInfo.enrolledClassid })
+                .then(res => {
+                    if (!res.deletedCount) {
+                        console.error('Failed to Delete')
+                    }
+                })
+        } catch (error) {
+            res.send({ error })
+        }
 
+    })
+    app.post('/allenrolled', async (req, res) => {
+        const classInfo = req.body;
+        try {
+            // console.log(classInfo)
+            const checkDouble = await AllEnrolled.findOne(classInfo);
+            if (checkDouble) {
+                return res.send({ message: 'Data is already in database' })
+            }
+            const allEnrollements = new AllEnrolled(classInfo);
+            const saveAllEnrolled = allEnrollements.save();
+            if (!saveAllEnrolled) {
+                console.log('failed')
+                res.send({ message: 'failed to store data' })
+            }
+            const deleteClass = await Enroll.deleteOne()
+            res.send('allenrolled data save in db')
+        } catch (error) {
+            res.send({ error })
+        }
+    })
+    app.get('/allenrolled', async (req, res) => {
+        const result = await AllEnrolled.find();
+        res.send(result)
+    })
+    app.get('/allenrolled/:email', async (req, res) => {
+        const email = req.params.email;
+        try {
+            const result = await AllEnrolled.find({ email: email });
+            res.send(result)
+        } catch (err) {
+            res.send({ err })
+        }
+    })
+    app.post('/feedback', async(req,res)=>{
+        const feedBack = req.body;
+        const createFeedBack = new feedBack(feedBack);
+        const saveFeedBack = createFeedBack.save();
+        res.send({message: 'feedback received'})
     })
     app.get('/feedback', async (req, res) => {
         try {
