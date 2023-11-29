@@ -18,9 +18,19 @@ const classCart = require('./src/models/ClassCartModel')
 const payment = require('./src/models/PaymentInfoModel')
 const Enroll = require('./src/models/EnrollModel');
 const AllEnrolled = require('./src/models/AllEnroledModel')
+const TeachReq = require('./src/models/TeacherModel');
+const { query } = require('express');
 //middleware
 app.use(express.json());
 app.use(cors());
+
+
+const corsOptions = {
+    origin: ['http://localhost:5003'],
+    credentials: true,
+    optionSuccessStatus: 200
+}
+
 
 connectDB().then(() => {
     //jwt token generate
@@ -84,22 +94,7 @@ connectDB().then(() => {
             res.send({ error })
         }
     })
-    //checkteacher
-    app.get('/users/teacher/:email', async (req, res) => {
-        const email = req.params.email;
-        // console.log(email)
-        const query = { email: email }
-        try {
-            const user = await User.findOne(query)
-            let teacher = false;
-            if (user) {
-                teacher = user.role === 'teacher'
-            }
-            res.send({ teacher })
-        } catch (error) {
-            res.send({ error })
-        }
-    })
+
     app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
         try {
             const users = await User.find({});
@@ -138,6 +133,33 @@ connectDB().then(() => {
         }
     });
 
+    //teacherrequest
+    app.post('/teacherrequest', async (req, res) => {
+        const teacherInfo = req.body;
+        try {
+            const checkDouble = await TeachReq.findOne(teacherInfo);
+            if (checkDouble) {
+                return res.send({ message: ' Request already sent' })
+            }
+            const createTeacherReq = new TeachReq(teacherInfo);
+            const saveTeacherReq = createTeacherReq.save();
+            if (saveTeacherReq) {
+                res.send({ message: 'succeed' })
+            }
+        } catch (error) {
+            res.send({ error })
+        }
+    })
+    app.get('/teacherrequest', async (req, res) => {
+        const result = await TeachReq.find();
+        res.send(result)
+    })
+    app.get('/teacherrequest/:email', async (req, res) => {
+        const email = req.params.email;
+        const filter = {email: email}
+        const result = await TeachReq.findOne(filter);
+        res.json(result)
+    })
     app.get('/classes', async (req, res) => {
         try {
             const classes = await Class.find({});
@@ -264,11 +286,11 @@ connectDB().then(() => {
             res.send({ err })
         }
     })
-    app.post('/feedback', async(req,res)=>{
+    app.post('/feedback', async (req, res) => {
         const feedBack = req.body;
         const createFeedBack = new feedBack(feedBack);
         const saveFeedBack = createFeedBack.save();
-        res.send({message: 'feedback received'})
+        res.send({ message: 'feedback received' })
     })
     app.get('/feedback', async (req, res) => {
         try {
