@@ -160,6 +160,10 @@ connectDB().then(() => {
         const result = await TeachReq.findOne(filter);
         res.json(result)
     })
+    app.patch('/teacherrequest/:id', async(req,res)=>{
+        const id = req.params.id;
+        console.log(id)
+    })
     app.get('/classes', async (req, res) => {
         try {
             const classes = await Class.find({});
