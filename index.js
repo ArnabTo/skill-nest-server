@@ -20,6 +20,7 @@ const Enroll = require('./src/models/EnrollModel');
 const AllEnrolled = require('./src/models/AllEnroledModel')
 const TeachReq = require('./src/models/TeacherModel');
 const { query } = require('express');
+const AddClass = require('./src/models/AddClassModel')
 //middleware
 app.use(express.json());
 app.use(cors());
@@ -162,7 +163,64 @@ connectDB().then(() => {
     })
     app.patch('/teacherrequest/:id', async(req,res)=>{
         const id = req.params.id;
-        console.log(id)
+        const updates = req.body;
+        console.log(id, updates)
+        try{
+           const teacherRequest = await TeachReq.findById(id);
+        //    console.log('Teacher Request:', teacherRequest);
+           if(!teacherRequest){
+            return res.send({message: 'Teacher request was not found'})
+           }
+           Object.keys(updates).forEach((field)=>{
+            teacherRequest[field] = updates[field]
+           })
+           const updatedRequest = await teacherRequest.save();
+         res.json(updatedRequest)
+        //    console.log(teacherRequest)
+        }catch(error){
+            res.send({error})
+        }
+    })
+    app.patch('/updateuser/:email', async(req,res)=>{
+        const email = req.params.email;
+        const updates = req.body;
+        // console.log(email, updates)
+        try{
+            const findUser = await User.findOne({email: email})
+            console.log(findUser)
+            const userId = findUser._id;
+            console.log(userId)
+            const updateUser = await User.findByIdAndUpdate(
+                userId,
+                {role: 'teacher'},
+                {upsert: true, new: true}
+            )
+            console.log(updateUser)
+           res.send({message: 'User Role Updated'})
+         
+        }catch(error){
+            res.send({error})
+        }
+    })
+    //add class
+    app.post('/classes', async(req,res)=>{
+        const classInfo = req.body;
+        // console.log(classInfo);
+        try{
+            const checkDouble = await AddClass.findOne(classInfo)
+            if(checkDouble){
+                return res.send({message:'Data is already in Database'})
+            }
+            const createClass = new AddClass(classInfo);
+            const saveClass = await createClass.save();
+            if(!saveClass){
+                res.send({message: 'class not added'})
+            }else(
+                res.send({message:'succeed'})
+            )
+        }catch(error){
+            res.send({error})
+        }
     })
     app.get('/classes', async (req, res) => {
         try {
@@ -172,10 +230,38 @@ connectDB().then(() => {
             res.send(error)
         }
     })
+    app.get('/classes/:email', async(req,res)=>{
+        const email = req.params.email;
+        // console.log(email)
+        try{
+            const user = await User.findOne({ email: req.params.email });
+            // console.log(user)
+            const classes = await Class.find({ userId: user._id });
+            // console.log(classes)
+            res.send(classes)
+             
+        }catch(error){
+            res.send({error})
+        }
+    })
+    app.delete('/classes/:id', async(req,res)=>{
+        const classId = req.params.id;
+        // console.log(classId)
+        try{
+            const deleteClass = await Class.findByIdAndDelete(classId);
+
+            if (!deleteClass) {
+                return res.send({message: 'Class Not found'})
+              }
+            res.send({message: 'succeed'})
+        }catch(error){
+            res.send({error})
+        }
+    })
     //allclass api 
     app.get('/allclasses', async (req, res) => {
         try {
-            const allClasses = await allClass.find();
+            const allClasses = await Class.find();
             res.send(allClasses)
         } catch (error) {
             console.log(error)
@@ -243,7 +329,7 @@ connectDB().then(() => {
             const query = { email: email };
             const paymentInfo = await Enroll.findOne(query)
             const filter = { _id: paymentInfo.enrolledClassid }
-            console.log(filter)
+            // console.log(filter)
             const enrolledClass = await allClass.findOne(filter)
             res.send(enrolledClass)
             Enroll.deleteOne({ _id: paymentInfo.enrolledClassid })
