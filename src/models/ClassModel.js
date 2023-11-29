@@ -5,9 +5,9 @@ const classSchema = new mongoose.Schema({
     email: String,
     name: String,
     image: String,
-    email: String,
     price: Number,
-    shortDescription: String,
+    status: String,
+    discription: String,
     total_enrollment: Number,
     userId: String
 });

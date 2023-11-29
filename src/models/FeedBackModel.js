@@ -5,6 +5,7 @@ const feedBackSchema = new mongoose.Schema({
      image: String,
      title: String,
      feedback: String,
+     classId: String,
 })
 
 const feedBack = mongoose.model('FeedBack', feedBackSchema, 'feedBackCollection');

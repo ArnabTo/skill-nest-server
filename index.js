@@ -80,7 +80,7 @@ connectDB().then(() => {
         }
     });
     //checkadmin api
-    app.get('/users/admin/:email', async (req, res) => {
+    app.get('/users/admin/:email', verifyToken, verifyAdmin  ,async (req, res) => {
         const email = req.params.email;
         // console.log(email)
         const query = { email: email }
@@ -96,7 +96,7 @@ connectDB().then(() => {
         }
     })
 
-    app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
+    app.get('/users', async (req, res) => {
         try {
             const users = await User.find({});
             res.send(users)
@@ -105,7 +105,7 @@ connectDB().then(() => {
         }
     })
     //user on email
-    app.get('/user/:email', async (req, res) => {
+    app.get('/user/:email' ,async (req, res) => {
         const data = req.params;
         console.log(data.email)
         const query = { email: data.email }
@@ -187,9 +187,9 @@ connectDB().then(() => {
         // console.log(email, updates)
         try{
             const findUser = await User.findOne({email: email})
-            console.log(findUser)
+            // console.log(findUser)
             const userId = findUser._id;
-            console.log(userId)
+            // console.log(userId)
             const updateUser = await User.findByIdAndUpdate(
                 userId,
                 {role: 'teacher'},
@@ -258,10 +258,47 @@ connectDB().then(() => {
             res.send({error})
         }
     })
+    app.get('/pendingclasses', async(req,res)=>{
+          const result = await allClass.find({status: "pending"})
+          res.send(result)
+    })
+    app.patch('/pendingclassapprove/:id', async(req,res)=>{
+         try{
+            const pendingClassId = req.params.id;
+            const updatePendingClass = await allClass.findByIdAndUpdate(
+              pendingClassId,
+              {status: 'approved'},
+              {upsert: true, new: true}
+            )
+            if(!updatePendingClass){
+              res.send({message:'Class status not updated'})
+            }
+            res.send({message: 'succeed'})
+         }catch(error){
+            res.send({error})
+         }
+    })
+    app.patch('/pendingclassreject/:id', async(req,res)=>{
+         try{
+            const pendingClassId = req.params.id;
+            const updatePendingClass = await allClass.findByIdAndUpdate(
+              pendingClassId,
+              {status: 'rejected'},
+              {upsert: true, new: true}
+            )
+            if(!updatePendingClass){
+              res.send({message:'Class status not updated'})
+            }
+            res.send({message: 'succeed'})
+         }catch(error){
+            res.send({error})
+         }
+    })
+
     //allclass api 
     app.get('/allclasses', async (req, res) => {
         try {
-            const allClasses = await Class.find();
+            const allClasses = await Class.find({status: 'approved'});
             res.send(allClasses)
         } catch (error) {
             console.log(error)
