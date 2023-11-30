@@ -28,7 +28,7 @@ app.use(cors());
 
 
 const corsOptions = {
-    origin: ['https://community-food-sharing-7180e.web.app', 'https://arsdev-food-share.netlify.app'],
+    origin: ['https://skill-nest.web.app', 'https://skill-nest.netlify.app'],
     credentials: true,
     optionSuccessStatus: 200
 }
