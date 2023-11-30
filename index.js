@@ -11,7 +11,7 @@ const { ObjectId } = require('mongodb');
 
 const connectDB = require('./src/db/ConnectDB')
 const Class = require('./src/models/ClassModel')
-const feedBack = require('./src/models/FeedBackModel')
+const FeedBack = require('./src/models/FeedBackModel')
 const User = require('./src/models/UserModel')
 const allClass = require('./src/models/AllClassModel');
 const classCart = require('./src/models/ClassCartModel')
@@ -21,13 +21,14 @@ const AllEnrolled = require('./src/models/AllEnroledModel')
 const TeachReq = require('./src/models/TeacherModel');
 const { query } = require('express');
 const AddClass = require('./src/models/AddClassModel')
+const Assignment = require('./src/models/AssignmentModel')
 //middleware
 app.use(express.json());
 app.use(cors());
 
 
 const corsOptions = {
-    origin: ['http://localhost:5003'],
+    origin: ['https://community-food-sharing-7180e.web.app', 'https://arsdev-food-share.netlify.app'],
     credentials: true,
     optionSuccessStatus: 200
 }
@@ -413,15 +414,53 @@ connectDB().then(() => {
             res.send({ err })
         }
     })
+    //assignment
+    app.post('/assignment', async(req,res)=>{
+        const assignmentInfo = req.body;
+        // console.log(assignmentInfo)
+        try{
+            const checkDouble = await Assignment.findOne(assignmentInfo)
+            if(checkDouble){
+               return res.send({message: 'This assignment is already in server'})
+            }
+            const createAssignment = new Assignment(assignmentInfo);
+            const saveAssignment = createAssignment.save();
+            res.send({messae: 'succeed'})
+        }catch(error){
+            res.send({error})
+        }
+    })
+    app.get('/assignment', async(req,res)=>{
+        try{
+            const assignment = await Assignment.find();
+            res.send(assignment)
+        }catch(error){
+            res.send({error})
+        }
+    })
+    app.get('/assignment/:id', async(req,res)=>{
+        const classId = req.params.id;
+        console.log(classId)
+        try{
+            const assignmentForTheClass = await Assignment.findOne({_id: classId});
+            console.log(assignmentForTheClass)
+        }catch(error){
+            res.send({error})
+        }
+    })
     app.post('/feedback', async (req, res) => {
         const feedBack = req.body;
-        const createFeedBack = new feedBack(feedBack);
+        const checkDouble = await FeedBack.findOne(feedBack);
+        if(checkDouble){
+            return res.send({message: 'Feedback received'})
+        }
+        const createFeedBack = new FeedBack(feedBack);
         const saveFeedBack = createFeedBack.save();
-        res.send({ message: 'feedback received' })
+        res.send({ message: 'succeed' })
     })
     app.get('/feedback', async (req, res) => {
         try {
-            const feedback = await feedBack.find({});
+            const feedback = await FeedBack.find({});
             res.send(feedback)
         } catch (error) {
             res.send(error)
@@ -453,7 +492,7 @@ connectDB().then(() => {
             const savePaymentInfo = await createPaymentInfo.save();
             const query = { classId: paymentInfo.classCartId }
             const deleteClass = await classCart.deleteOne(query);
-
+    
             res.send({ message: 'Payment Information saved to Db' })
         } catch (error) {
             res.send({ error })
@@ -463,15 +502,17 @@ connectDB().then(() => {
     app.patch('/updateclassdata/:id', async (req, res) => {
         const classId = req.params.id;
         try {
-            const updateCladdData = await allClass.updateOne(
-                { _id: classId },
-                { $inc: { total_enrollment: 1 } },
-            )
-            if (updateCladdData.nModified > 0) {
-                res.json({ message: "Data Updated Successfully" })
-            } else {
-                res.status(404).json({ error: 'Class not updated' })
-            }
+           const updateClass = await allClass.findByIdAndUpdate(
+             {_id: classId},
+            { $inc: {total_enrollment: 1} },
+            {upsert: true, new: true}
+           )
+           if(!updateClass){
+             res.send({messae: 'Data not updated'})
+           }else{
+             res.send({message: 'Data updated'})
+           }
+           
         } catch (error) {
             res.send({ error })
         }
